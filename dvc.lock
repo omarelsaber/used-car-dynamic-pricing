@@ -18,3 +18,26 @@ stages:
       hash: md5
       md5: 5e19e67a9f9046d935819fc10d5bb0cd
       size: 227084
+  build_features:
+    cmd: python src/features/build_features.py --input 
+      data/processed/processed_cars.csv --output-data 
+      data/processed/featured_cars.csv --output-preprocessor 
+      models/preprocessor.pkl
+    deps:
+    - path: data/processed/processed_cars.csv
+      hash: md5
+      md5: 5e19e67a9f9046d935819fc10d5bb0cd
+      size: 227084
+    - path: src/features/build_features.py
+      hash: md5
+      md5: c8dd9907ab0d21463ea0ae3d37ef99ad
+      size: 15862
+    outs:
+    - path: data/processed/featured_cars.csv
+      hash: md5
+      md5: 626c61df0dbab530f5fb48779d09466a
+      size: 3845513
+    - path: models/preprocessor.pkl
+      hash: md5
+      md5: aded576c613aac45b183a11dc8b850e8
+      size: 11384
