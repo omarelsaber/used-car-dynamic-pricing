@@ -1,0 +1,20 @@
+schema: '2.0'
+stages:
+  process_data:
+    cmd: python src/data/process_data.py --input 
+      data/raw/car_web_scraped_dataset.csv --output 
+      data/processed/processed_cars.csv
+    deps:
+    - path: data/raw/car_web_scraped_dataset.csv
+      hash: md5
+      md5: baad5f5313b07a70ac360426f78ae92e
+      size: 315881
+    - path: src/data/process_data.py
+      hash: md5
+      md5: 3ac8ac32683212644e1c5b88177dcea6
+      size: 11670
+    outs:
+    - path: data/processed/processed_cars.csv
+      hash: md5
+      md5: 5e19e67a9f9046d935819fc10d5bb0cd
+      size: 227084

@@ -1,5 +1,0 @@
-outs:
-- md5: 5e19e67a9f9046d935819fc10d5bb0cd
-  size: 227084
-  hash: md5
-  path: processed_cars.csv
