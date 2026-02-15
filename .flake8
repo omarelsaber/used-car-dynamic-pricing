@@ -1,0 +1,40 @@
+[flake8]
+# Flake8 configuration for code quality linting
+
+# Maximum line length (match black's default for consistency)
+max-line-length = 120
+
+# Error codes to ignore
+# E203: whitespace before ':' (conflicts with black)
+# W503: line break before binary operator (conflicts with black)
+# W504: line break after binary operator (conflicts with black)
+ignore = E203, W503, W504
+
+# Directories and files to exclude
+exclude =
+    .git,
+    __pycache__,
+    .pytest_cache,
+    .venv,
+    venv,
+    env,
+    mlruns,
+    .dvc,
+    .github,
+    htmlcov,
+    .eggs,
+    *.egg-info
+
+# Show source code in output
+show-source = True
+
+# Show pep8 statistics
+statistics = True
+
+# Number of subprocesses to use (improves performance)
+jobs = 4
+
+# Per-file ignores
+per-file-ignores =
+    __init__.py:F401
+    tests/*:F841,F406
