@@ -44,7 +44,8 @@ stages:
   train_model:
     cmd: python src/models/train_model.py --input 
       data/processed/featured_cars.csv --output-model models/model.pkl 
-      --output-metrics metrics/scores.json --n-estimators 100 --max-depth 10
+      --output-metrics metrics/scores.json --n-estimators 200 --max-depth 15 
+      --test-size 0.2 --random-state 42 --target price
     deps:
     - path: data/processed/featured_cars.csv
       hash: md5
@@ -54,12 +55,19 @@ stages:
       hash: md5
       md5: e89fb9b70cac16e4a2d96437ad162db1
       size: 16548
+    params:
+      params.yaml:
+        train.max_depth: 15
+        train.n_estimators: 200
+        train.random_state: 42
+        train.target_col: price
+        train.test_size: 0.2
     outs:
     - path: metrics/scores.json
       hash: md5
-      md5: 8af8cafae53a0f153f52b771c7b4619f
-      size: 99
+      md5: 862be549dab75f2da2782d55b897a5e9
+      size: 97
     - path: models/model.pkl
       hash: md5
-      md5: ee2d7c1b94caaa486124e30bc31050f7
-      size: 1555457
+      md5: cebc47c8462f83e9c2ffa5a65d3142a4
+      size: 6892625

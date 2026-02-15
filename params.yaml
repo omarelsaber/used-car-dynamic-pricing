@@ -1,0 +1,28 @@
+# Hyperparameter Configuration for Used Car Dynamic Pricing
+# ==========================================================
+# This file contains all tunable parameters for the ML pipeline.
+# Changing values here and running `dvc repro` triggers re-execution.
+# DVC automatically tracks parameter changes and updates dvc.lock.
+
+# Data Processing Parameters
+process:
+  # Placeholder for future processing parameters
+  # (e.g., duplicate detection thresholds, data quality filters)
+
+# Feature Engineering Parameters
+features:
+  # Placeholder for future feature engineering parameters
+  # (e.g., feature selection thresholds, scaling methods, encoding options)
+
+# Model Training Parameters
+train:
+  # Random Forest Hyperparameters
+  n_estimators: 200        # Increased from 100
+  max_depth: 15            # Increased from 10
+  
+  # Train/Test Split
+  test_size: 0.2           # Proportion of data for testing (0.0 to 1.0)
+  random_state: 42         # Random seed for reproducibility
+  
+  # Target Variable
+  target_col: price        # Name of the column to predict

@@ -33,11 +33,20 @@ stages:
       --input data/processed/featured_cars.csv
       --output-model models/model.pkl
       --output-metrics metrics/scores.json
-      --n-estimators 100
-      --max-depth 10
+      --n-estimators ${train.n_estimators}
+      --max-depth ${train.max_depth}
+      --test-size ${train.test_size}
+      --random-state ${train.random_state}
+      --target ${train.target_col}
     deps:
       - data/processed/featured_cars.csv
       - src/models/train_model.py
+    params:
+      - train.n_estimators
+      - train.max_depth
+      - train.test_size
+      - train.random_state
+      - train.target_col
     outs:
       - models/model.pkl
     metrics:
