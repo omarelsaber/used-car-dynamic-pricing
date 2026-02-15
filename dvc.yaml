@@ -27,3 +27,19 @@ stages:
     outs:
       - data/processed/featured_cars.csv
       - models/preprocessor.pkl
+  train_model:
+    cmd: >-
+      python src/models/train_model.py
+      --input data/processed/featured_cars.csv
+      --output-model models/model.pkl
+      --output-metrics metrics/scores.json
+      --n-estimators 100
+      --max-depth 10
+    deps:
+      - data/processed/featured_cars.csv
+      - src/models/train_model.py
+    outs:
+      - models/model.pkl
+    metrics:
+      - metrics/scores.json:
+          cache: false
