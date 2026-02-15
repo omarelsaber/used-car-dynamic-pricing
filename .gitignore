@@ -1,7 +1,11 @@
 ﻿# Data directories (managed by DVC)
-data/raw/
-data/processed/
-data/external/
+# Ignore actual data files but allow .dvc pointers
+data/raw/*
+!data/raw/*.dvc
+data/processed/*
+!data/processed/*.dvc
+data/external/*
+!data/external/*.dvc
 
 # Virtual environment
 venv/
