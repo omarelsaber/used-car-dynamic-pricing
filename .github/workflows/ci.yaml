@@ -1,8 +1,4 @@
-﻿# .github/workflows/ci.yaml
-# CI/CD Pipeline for Used Car Price Prediction System
-# ===================================================
-
-name: CI Pipeline
+﻿name: CI Pipeline
 
 on:
   push:
@@ -25,7 +21,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       
       - name: Install Linting Tools
         run: |
@@ -61,7 +57,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       
       - name: Install Dependencies
         run: |
@@ -94,7 +90,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: '3.10'
+          python-version: "3.10"
       
       - name: Install Security Tools
         run: |
@@ -125,34 +121,28 @@ jobs:
       - name: Create Dummy .env File
         run: |
           echo "API_HOST=0.0.0.0" >> .env
-          echo "API_PORT=8000" >> .env
-          echo "API_URL=http://localhost:8000" >> .env
+          echo "API_PORT=8001" >> .env
+          echo "API_URL=http://localhost:8001" >> .env
           echo "MODEL_VERSION=xgboost_v5.0_cardekho" >> .env
           echo "MODEL_PATH=models/model.pkl" >> .env
           echo "PREPROCESSOR_PATH=models/preprocessor.pkl" >> .env
           echo "LOG_LEVEL=info" >> .env
-          cat .env
       
       - name: Verify Docker Compose Config
-        run: |
-          docker-compose config
+        run: docker-compose config > /dev/null
       
       - name: Build Docker Images
-        run: |
-          docker-compose build
+        run: docker-compose build
       
-      - name: Test Docker Services Start
+      - name: Test Docker Services
         run: |
           docker-compose up -d
           sleep 10
           docker-compose ps
-          docker-compose logs api
-          docker-compose logs frontend
       
       - name: Cleanup
         if: always()
-        run: |
-          docker-compose down -v
+        run: docker-compose down -v
 
   # ============================================================================
   # Job 5: Summary
@@ -166,8 +156,7 @@ jobs:
     steps:
       - name: Check Results
         run: |
-          echo "CI Pipeline Summary:"
-          echo "===================="
+          echo "=== CI Pipeline Summary ==="
           echo "Code Quality: ${{ needs.code-quality.result }}"
           echo "Unit Tests: ${{ needs.unit-tests.result }}"
           echo "Security: ${{ needs.security.result }}"
@@ -183,4 +172,4 @@ jobs:
             exit 1
           fi
           
-          echo " CI Pipeline passed (code quality issues are non-blocking)"
+          echo " CI Pipeline passed"
