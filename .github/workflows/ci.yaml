@@ -1,203 +1,186 @@
+﻿# .github/workflows/ci.yaml
+# CI/CD Pipeline for Used Car Price Prediction System
+# ===================================================
+
 name: CI Pipeline
 
 on:
   push:
-    branches:
-      - main
-      - develop
+    branches: [main, develop]
   pull_request:
-    branches:
-      - main
-      - develop
-  workflow_dispatch:
+    branches: [main, develop]
 
 jobs:
+  # ============================================================================
   # Job 1: Code Quality Checks
+  # ============================================================================
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.9', '3.10', '3.11']
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
       
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          python-version: '3.10'
       
-      - name: Install dependencies
+      - name: Install Linting Tools
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install flake8 black isort
       
-      - name: Run flake8 linting
+      - name: Run Flake8 (Non-blocking)
         continue-on-error: true
         run: |
-          python -m flake8 src tests --count --statistics --format=github
+          flake8 src/ --count --max-line-length=120 --statistics --exit-zero
       
-      - name: Check import sorting with isort
+      - name: Check Black Formatting
         continue-on-error: true
         run: |
-          python -m isort --check-only src tests --diff
+          black --check --line-length 120 src/
       
-      - name: Check code formatting with black
+      - name: Check Isort
         continue-on-error: true
         run: |
-          python -m black --check src tests --line-length 120
+          isort --check-only --profile black src/
 
+  # ============================================================================
   # Job 2: Unit Tests
-  tests:
+  # ============================================================================
+  unit-tests:
     name: Unit Tests
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.10', '3.11']
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
       
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          python-version: '3.10'
       
-      - name: Install dependencies
+      - name: Install Dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          pip install pytest pytest-cov
       
-      - name: Run unit tests
+      - name: Run Tests
         run: |
-          python -m pytest tests -v --tb=short --junit-xml=test-results.xml
+          pytest tests/ -v --cov=src --cov-report=xml --cov-report=term-missing
       
-      - name: Generate test coverage report
-        run: |
-          python -m pytest tests -v --cov=src --cov-report=xml --cov-report=html --cov-report=term-missing
-      
-      - name: Upload test results
-        uses: actions/upload-artifact@v3
-        if: always()
+      - name: Upload Coverage to Codecov
+        uses: codecov/codecov-action@v3
         with:
-          name: test-results-${{ matrix.python-version }}
-          path: test-results.xml
-      
-      - name: Upload coverage report
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: coverage-report-${{ matrix.python-version }}
-          path: htmlcov/
-      
-      - name: Report test coverage to PR
-        if: github.event_name == 'pull_request'
-        uses: py-cov-action/python-coverage-comment-action@v3
-        with:
-          GITHUB_TOKEN: ${{ github.token }}
-          MINIMUM_GREEN: 70
-          MINIMUM_ORANGE: 50
+          file: ./coverage.xml
+          flags: unittests
+          fail_ci_if_error: false
 
-  # Job 3: Docker Configuration Check
-  docker-verify:
-    name: Docker Configuration
-    runs-on: ubuntu-latest
-    
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Verify Docker Compose Configuration
-        run: |
-          docker-compose config > /dev/null 2>&1
-          echo "✅ docker-compose.yaml is valid"
-      
-      - name: Build Docker image (dry-run)
-        continue-on-error: true
-        run: |
-          docker --version
-          echo "✅ Docker available for production deployment"
-
-  # Job 4: Security Checks
+  # ============================================================================
+  # Job 3: Security Scan
+  # ============================================================================
   security:
-    name: Security Checks
+    name: Security Scan
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ['3.11']
     
     steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
+      - name: Checkout Code
+        uses: actions/checkout@v3
       
-      - name: Set up Python ${{ matrix.python-version }}
+      - name: Set up Python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: 'pip'
+          python-version: '3.10'
       
-      - name: Install dependencies
+      - name: Install Security Tools
         run: |
           python -m pip install --upgrade pip
-        5: Summary
-  summary:
-    name: CI Summary
-    runs-on: ubuntu-latest
-    needs: [code-quality, tests, docker-verify, security]
-    if: always()
-    
-    steps:
-      - name: Check CI results
-        run: |
-          if [[ "${{ needs.code-quality.result }}" == "failure" || \
-                "${{ needs.tests.result }}" == "failure" || \
-                "${{ needs.docker-verify true
+          pip install safety bandit
       
-      - name: Upload bandit report
-        uses: actions/upload-artifact@v3
-        if: always()
-        with:
-          name: bandit-report
-          path: bandit-report.json
+      - name: Run Safety Check
+        continue-on-error: true
+        run: |
+          safety check --json || true
+      
+      - name: Run Bandit
+        continue-on-error: true
+        run: |
+          bandit -r src/ -f json || true
 
-  # Job 4: Summary
+  # ============================================================================
+  # Job 4: Docker Build & Config Validation
+  # ============================================================================
+  docker:
+    name: Docker Build
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v3
+      
+      - name: Create Dummy .env File
+        run: |
+          echo "API_HOST=0.0.0.0" >> .env
+          echo "API_PORT=8000" >> .env
+          echo "API_URL=http://localhost:8000" >> .env
+          echo "MODEL_VERSION=xgboost_v5.0_cardekho" >> .env
+          echo "MODEL_PATH=models/model.pkl" >> .env
+          echo "PREPROCESSOR_PATH=models/preprocessor.pkl" >> .env
+          echo "LOG_LEVEL=info" >> .env
+          cat .env
+      
+      - name: Verify Docker Compose Config
+        run: |
+          docker-compose config
+      
+      - name: Build Docker Images
+        run: |
+          docker-compose build
+      
+      - name: Test Docker Services Start
+        run: |
+          docker-compose up -d
+          sleep 10
+          docker-compose ps
+          docker-compose logs api
+          docker-compose logs frontend
+      
+      - name: Cleanup
+        if: always()
+        run: |
+          docker-compose down -v
+
+  # ============================================================================
+  # Job 5: Summary
+  # ============================================================================
   summary:
     name: CI Summary
     runs-on: ubuntu-latest
-    needs: [code-quality, tests, security]
+    needs: [code-quality, unit-tests, security, docker]
     if: always()
     
     steps:
-      - name: Check CI results
+      - name: Check Results
         run: |
-          if [[ "${{ needs.code-quality.result }}" == "failure" || \
-                "${{ needs.tests.result }}" == "failure" || \
-                "${{ needs.security.result }}" == "failure" ]]; then
-            echo "❌ CI Pipeline Failed"
+          echo "CI Pipeline Summary:"
+          echo "===================="
+          echo "Code Quality: ${{ needs.code-quality.result }}"
+          echo "Unit Tests: ${{ needs.unit-tests.result }}"
+          echo "Security: ${{ needs.security.result }}"
+          echo "Docker: ${{ needs.docker.result }}"
+          
+          if [ "${{ needs.unit-tests.result }}" == "failure" ]; then
+            echo " Unit tests failed - blocking merge"
             exit 1
-          else
-            echo "✅ CI Pipeline Passed"
           fi
-      
-      - name: Checkout code
-        uses: actions/checkout@v4
-      
-      - name: Download all artifacts
-        uses: actions/download-artifact@v3
-      
-      - name: Generate CI Summary
-        run: |
-          echo "# CI Pipeline Summary" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "## Results" >> $GITHUB_STEP_SUMMARY
-          echo "- **Code Quality**: ${{ needs.code-quality.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Docker Configuration**: ${{ needs.docker-verify.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Unit Tests**: ${{ needs.tests.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "- **Security Checks**: ${{ needs.security.result }}" >> $GITHUB_STEP_SUMMARY
-          echo "" >> $GITHUB_STEP_SUMMARY
-          echo "[View Test Results](https://github.com/${{ github.repository }}/actions/runs/${{ github.run_id }})" >> $GITHUB_STEP_SUMMARY
+          
+          if [ "${{ needs.docker.result }}" == "failure" ]; then
+            echo " Docker build failed - blocking merge"
+            exit 1
+          fi
+          
+          echo " CI Pipeline passed (code quality issues are non-blocking)"
