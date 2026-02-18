@@ -1,0 +1,42 @@
+# Docker & GitHub Deployment – Verification Checklist
+# Used Car Dynamic Pricing – Plan B: Docker ready, run locally
+
+## Files present and role
+
+[✓] Dockerfile             – API (FastAPI + XGBoost). Multi-stage, non-root, healthcheck, port 8000.
+[✓] Dockerfile.frontend    – Frontend (Streamlit + streamlit-lottie). curl for healthcheck, port 8501.
+[✓] docker-compose.yaml    – Orchestrates api + frontend; frontend depends_on api (service_healthy).
+[✓] requirements.txt      – Single deps file: XGBoost, FastAPI, Streamlit, streamlit-lottie, etc.
+
+## requirements.txt – key dependencies
+
+[✓] xgboost>=2.0.0
+[✓] fastapi>=0.104.0
+[✓] uvicorn[standard]>=0.24.0
+[✓] pydantic>=2.4.0
+[✓] streamlit>=1.28.0
+[✓] streamlit-lottie>=0.0.5
+[✓] requests>=2.31.0
+[✓] plotly>=5.17.0
+[✓] joblib, pandas, numpy, scikit-learn, pyyaml, python-dotenv, etc.
+
+## .dockerignore
+
+[✓] models/ is NOT ignored (required for API image).
+[✓] data/raw, data/processed excluded to keep context small.
+[✓] .git, venv, __pycache__, notebooks, .env excluded.
+
+## docker-compose
+
+[✓] api service: build Dockerfile, port 8000, healthcheck, logs volume.
+[✓] frontend service: build Dockerfile.frontend, port 8501, API_URL=http://api:8000.
+[✓] frontend depends_on: api with condition: service_healthy.
+[✓] Shared network: ml-network.
+
+## Pre-deploy
+
+[ ] Ensure models/model.pkl and models/preprocessor.pkl exist (run pipeline if not).
+[ ] For local run: Python 3.10+, pip install -r requirements.txt.
+[ ] For Docker: docker-compose up -d --build.
+
+See DEPLOYMENT.md for full instructions.

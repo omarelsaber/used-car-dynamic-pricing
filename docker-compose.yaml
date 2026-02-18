@@ -1,0 +1,91 @@
+# Docker Compose for Used Car Price Prediction API
+# ================================================
+# Provides easy local development and testing environment
+
+version: '3.8'
+
+services:
+  # ============================================================================
+  # API Backend Service
+  # ============================================================================
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: used-car-price-api:latest
+    container_name: car-price-api
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=info
+    volumes:
+      - ./logs:/app/logs
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ml-network
+
+  # ============================================================================
+  # Frontend Service (Streamlit)
+  # ============================================================================
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile.frontend
+    image: used-car-price-frontend:latest
+    container_name: car-price-frontend
+    ports:
+      - "8501:8501"
+    environment:
+      - API_URL=http://api:8000
+      - PYTHONUNBUFFERED=1
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8501/_stcore/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - ml-network
+
+  # ============================================================================
+  # Development API Service (with hot-reload)
+  # ============================================================================
+  api-dev:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: used-car-price-api:dev
+    container_name: car-price-api-dev
+    ports:
+      - "8001:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=debug
+    volumes:
+      # Mount source code for hot-reload
+      - ./src:/app/src
+      - ./models:/app/models
+      - ./logs:/app/logs
+    restart: unless-stopped
+    networks:
+      - ml-network
+    profiles:
+      - dev  # Only start with --profile dev
+
+networks:
+  ml-network:
+    driver: bridge
+
+volumes:
+  logs:

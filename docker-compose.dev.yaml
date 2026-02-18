@@ -1,0 +1,34 @@
+# Development-specific Docker Compose
+# ===================================
+# Optimized for local development with hot-reload
+
+version: '3.8'
+
+services:
+  api:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: used-car-price-api:dev
+    container_name: car-price-api-dev
+    ports:
+      - "8000:8000"
+    environment:
+      - PYTHONUNBUFFERED=1
+      - LOG_LEVEL=debug
+      - RELOAD=true
+    volumes:
+      # Mount entire project for hot-reload
+      - ./src:/app/src:ro
+      - ./models:/app/models:ro
+      - ./logs:/app/logs
+      - ./tests:/app/tests:ro
+    restart: unless-stopped
+    stdin_open: true
+    tty: true
+    networks:
+      - ml-network
+
+networks:
+  ml-network:
+    driver: bridge

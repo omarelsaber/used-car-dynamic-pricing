@@ -40,11 +40,13 @@ wheels/
 .ipynb_checkpoints
 *.ipynb_checkpoints/
 
-# Model artifacts (will be tracked by DVC)
-models/*.pkl
-models/*.joblib
-models/*.h5
-models/*.pth
+# Model artifacts
+# For demo purposes, we include small model files (<5MB) to allow users to test the API immediately
+# Larger models should be tracked by DVC for production use
+# models/*.pkl
+# models/*.joblib
+# models/*.h5
+# models/*.pth
 
 # Logs
 logs/

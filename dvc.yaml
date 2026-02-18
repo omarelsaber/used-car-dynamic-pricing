@@ -1,5 +1,5 @@
-# DVC Pipeline Definition for Used Car Dynamic Pricing
-# ====================================================
+# DVC Pipeline Definition for Cardekho V5.0
+# ==========================================
 # This file defines the ML pipeline stages with their dependencies and outputs.
 # DVC uses this to create a dependency graph and track reproducibility.
 
@@ -7,10 +7,10 @@ stages:
   process_data:
     cmd: >-
       python src/data/process_data.py
-      --input data/raw/car_web_scraped_dataset.csv
+      --input data/raw/cardekho_v3.csv
       --output data/processed/processed_cars.csv
     deps:
-      - data/raw/car_web_scraped_dataset.csv
+      - data/raw/cardekho_v3.csv
       - src/data/process_data.py
     outs:
       - data/processed/processed_cars.csv
@@ -34,7 +34,14 @@ stages:
       --output-model models/model.pkl
       --output-metrics metrics/scores.json
       --n-estimators ${train.n_estimators}
+      --learning-rate ${train.learning_rate}
       --max-depth ${train.max_depth}
+      --reg-lambda ${train.reg_lambda}
+      --reg-alpha ${train.reg_alpha}
+      --subsample ${train.subsample}
+      --colsample-bytree ${train.colsample_bytree}
+      --min-child-weight ${train.min_child_weight}
+      --gamma ${train.gamma}
       --test-size ${train.test_size}
       --random-state ${train.random_state}
       --target ${train.target_col}
@@ -43,7 +50,14 @@ stages:
       - src/models/train_model.py
     params:
       - train.n_estimators
+      - train.learning_rate
       - train.max_depth
+      - train.reg_lambda
+      - train.reg_alpha
+      - train.subsample
+      - train.colsample_bytree
+      - train.min_child_weight
+      - train.gamma
       - train.test_size
       - train.random_state
       - train.target_col

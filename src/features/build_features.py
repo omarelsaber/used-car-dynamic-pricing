@@ -1,12 +1,13 @@
 """
-Feature Engineering Pipeline for Used Car Dynamic Pricing
-==========================================================
+Feature Engineering Pipeline for Cardekho V3 Dataset
+===================================================
 
-This module handles feature creation and preprocessing transformations.
-It creates a fitted preprocessor artifact for consistent train/inference.
+Simplified feature engineering for the rich Cardekho dataset.
+No complex text parsing needed - dataset has explicit features!
 
-Author: MLOps Team
-Date: 2024
+Author: Omar Elsaber  
+Date: Feb 2026
+Version: V5.0 (Cardekho Dataset)
 """
 
 import argparse
@@ -35,18 +36,7 @@ logger = logging.getLogger(__name__)
 
 
 def load_processed_data(input_path: str) -> pd.DataFrame:
-    """
-    Load processed data from CSV file.
-    
-    Args:
-        input_path (str): Path to the processed CSV file
-        
-    Returns:
-        pd.DataFrame: Loaded dataframe
-        
-    Raises:
-        FileNotFoundError: If input file doesn't exist
-    """
+    """Load processed data from CSV file."""
     logger.info(f"Loading processed data from: {input_path}")
     
     input_file = Path(input_path)
@@ -55,42 +45,79 @@ def load_processed_data(input_path: str) -> pd.DataFrame:
     
     df = pd.read_csv(input_path)
     logger.info(f"✅ Data loaded successfully: {df.shape[0]} rows × {df.shape[1]} columns")
-    logger.info(f"Columns: {df.columns.tolist()}")
     
     return df
 
 
+def extract_brand(name: str) -> str:
+    """
+    Extract car brand (first word) from car name.
+    
+    Args:
+        name (str): Full car name
+        
+    Returns:
+        str: Extracted brand
+    """
+    if pd.isna(name) or name.strip() == "":
+        return "Unknown"
+    
+    brand = name.strip().split()[0]
+    return brand
+
+
 def create_features(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Create new features from existing columns.
+    Create engineered features from existing columns.
+    
+    For Cardekho dataset, most features are already explicit.
+    We just add:
+    - brand (from name)
+    - car_age (from year)
     
     Args:
         df (pd.DataFrame): Input dataframe
         
     Returns:
-        pd.DataFrame: Dataframe with new features added
+        pd.DataFrame: Dataframe with new features
     """
-    logger.info("Creating new features...")
+    logger.info("="*80)
+    logger.info("CREATING FEATURES - CARDEKHO V5.0")
+    logger.info("="*80)
     
     df_featured = df.copy()
     
-    # Feature 1: Car Age (current year - year)
+    # Extract brand
+    logger.info("Extracting brand from name...")
+    df_featured['brand'] = df_featured['name'].apply(extract_brand)
+    
+    unique_brands = df_featured['brand'].nunique()
+    logger.info(f"✅ Brand extracted: {unique_brands} unique brands")
+    
+    top_brands = df_featured['brand'].value_counts().head(10)
+    logger.info(f"Top 10 brands:")
+    for brand, count in top_brands.items():
+        logger.info(f"  {brand}: {count}")
+    
+    # Calculate car age
     current_year = datetime.now().year
     df_featured['car_age'] = current_year - df_featured['year']
     
-    logger.info(f"✅ Created feature: car_age (range: {df_featured['car_age'].min()} to {df_featured['car_age'].max()} years)")
+    logger.info(f"✅ Car age calculated (range: {df_featured['car_age'].min()}-{df_featured['car_age'].max()} years)")
     
-    # Feature 2: Mileage per year
-    df_featured['mileage_per_year'] = df_featured['mileage'] / df_featured['car_age'].replace(0, 1)  # Avoid division by zero
-    
-    logger.info(f"✅ Created feature: mileage_per_year (mean: {df_featured['mileage_per_year'].mean():.0f} miles/year)")
-    
-    # Feature 3: Price per year (depreciation indicator)
-    df_featured['price_per_year'] = df_featured['price'] / df_featured['car_age'].replace(0, 1)
-    
-    logger.info(f"✅ Created feature: price_per_year (mean: ${df_featured['price_per_year'].mean():.0f}/year)")
-    
-    logger.info(f"Total features after creation: {df_featured.shape[1]}")
+    # Log feature summary
+    logger.info("="*80)
+    logger.info("FEATURE SUMMARY")
+    logger.info("="*80)
+    logger.info(f"Categorical features available:")
+    logger.info(f"  - brand: {df_featured['brand'].nunique()} unique")
+    logger.info(f"  - fuel: {df_featured['fuel'].nunique()} unique")
+    logger.info(f"  - seller_type: {df_featured['seller_type'].nunique()} unique")
+    logger.info(f"  - transmission: {df_featured['transmission'].nunique()} unique")
+    logger.info(f"  - owner: {df_featured['owner'].nunique()} unique")
+    logger.info(f"Numerical features available:")
+    logger.info(f"  - year, mileage_driven, mileage, engine, max_power, seats, car_age")
+    logger.info("="*80)
     
     return df_featured
 
@@ -101,49 +128,67 @@ def define_feature_columns(df: pd.DataFrame, target_col: str = 'price'):
     
     Args:
         df (pd.DataFrame): Input dataframe
-        target_col (str): Name of the target variable to exclude
+        target_col (str): Name of the target variable
         
     Returns:
         tuple: (categorical_features, numerical_features)
     """
     logger.info("Defining feature columns...")
     
-    # Exclude target and identifier columns
-    exclude_cols = {target_col, 'year'}  # year is used to create car_age, not as direct feature
+    # ========================================================================
+    # CATEGORICAL FEATURES
+    # ========================================================================
+    categorical_features = [
+        'brand',         # Extracted from name
+        'fuel',          # Petrol, Diesel, CNG, LPG, Electric
+        'seller_type',   # Individual, Dealer, Trustmark Dealer
+        'transmission',  # Manual, Automatic
+        'owner'          # First Owner, Second Owner, etc.
+    ]
     
-    # Categorical features
-    categorical_features = ['name', 'color', 'condition']
+    logger.info(f"Categorical features:")
+    for feat in categorical_features:
+        logger.info(f"   - {feat}: {df[feat].nunique()} unique values")
     
-    # Numerical features
-    numerical_features = ['mileage', 'car_age', 'mileage_per_year']
+    # ========================================================================
+    # NUMERICAL FEATURES
+    # ========================================================================
+    numerical_features = [
+        'year',            # Manufacturing year
+        'mileage_driven',  # Total kilometers driven
+        'mileage',         # Fuel efficiency (kmpl) - PARSED
+        'engine',          # Engine size (CC) - PARSED
+        'max_power',       # Maximum power (bhp) - PARSED
+        'seats',           # Number of seats
+        'car_age'          # Calculated: current_year - year
+    ]
     
-    # Validation: Check all defined features exist
+    logger.info(f"Numerical features:")
+    for feat in numerical_features:
+        if feat in df.columns:
+            logger.info(f"   - {feat}: mean={df[feat].mean():.2f}, range=[{df[feat].min():.0f}, {df[feat].max():.0f}]")
+    
+    # Validation
     all_features = categorical_features + numerical_features
     missing_features = set(all_features) - set(df.columns)
     
     if missing_features:
         raise ValueError(f"Defined features not found in dataframe: {missing_features}")
     
-    logger.info(f"✅ Categorical features ({len(categorical_features)}): {categorical_features}")
-    logger.info(f"✅ Numerical features ({len(numerical_features)}): {numerical_features}")
+    # Estimate total features
+    estimated_features = sum(df[f].nunique() for f in categorical_features) + len(numerical_features)
+    
+    logger.info(f"✅ Total features defined: {len(all_features)}")
+    logger.info(f"Estimated features after encoding: ~{estimated_features}")
+    logger.info(f"Feature-to-sample ratio: {estimated_features}/{len(df)} = {estimated_features/len(df)*100:.1f}%")
     
     return categorical_features, numerical_features
 
 
 def build_preprocessor(categorical_features: list, numerical_features: list) -> ColumnTransformer:
-    """
-    Build preprocessing pipeline using ColumnTransformer.
-    
-    Args:
-        categorical_features (list): List of categorical column names
-        numerical_features (list): List of numerical column names
-        
-    Returns:
-        ColumnTransformer: Fitted preprocessing pipeline
-    """
+    """Build preprocessing pipeline."""
     logger.info("Building preprocessing pipeline...")
     
-    # Define transformers
     categorical_transformer = Pipeline(steps=[
         ('onehot', OneHotEncoder(handle_unknown='ignore', sparse_output=False))
     ])
@@ -152,19 +197,16 @@ def build_preprocessor(categorical_features: list, numerical_features: list) -> 
         ('scaler', StandardScaler())
     ])
     
-    # Combine transformers
     preprocessor = ColumnTransformer(
         transformers=[
             ('cat', categorical_transformer, categorical_features),
             ('num', numerical_transformer, numerical_features)
         ],
-        remainder='drop',  # Drop columns not specified
+        remainder='drop',
         verbose_feature_names_out=True
     )
     
     logger.info("✅ Preprocessing pipeline built successfully")
-    logger.info(f"   - Categorical: OneHotEncoder (handle_unknown='ignore')")
-    logger.info(f"   - Numerical: StandardScaler")
     
     return preprocessor
 
@@ -174,22 +216,9 @@ def fit_and_transform(df: pd.DataFrame,
                      categorical_features: list,
                      numerical_features: list,
                      target_col: str = 'price') -> tuple:
-    """
-    Fit preprocessor and transform features.
-    
-    Args:
-        df (pd.DataFrame): Input dataframe
-        preprocessor (ColumnTransformer): Preprocessing pipeline
-        categorical_features (list): Categorical column names
-        numerical_features (list): Numerical column names
-        target_col (str): Target column name
-        
-    Returns:
-        tuple: (transformed_df, fitted_preprocessor, feature_names)
-    """
+    """Fit preprocessor and transform features."""
     logger.info("Fitting and transforming features...")
     
-    # Separate features and target
     feature_columns = categorical_features + numerical_features
     X = df[feature_columns]
     y = df[target_col]
@@ -197,182 +226,101 @@ def fit_and_transform(df: pd.DataFrame,
     logger.info(f"Feature matrix shape: {X.shape}")
     logger.info(f"Target variable shape: {y.shape}")
     
-    # Fit and transform
     X_transformed = preprocessor.fit_transform(X)
     
     logger.info(f"✅ Features transformed: {X_transformed.shape}")
     
-    # Get feature names after transformation
     feature_names = preprocessor.get_feature_names_out()
-    logger.info(f"Total features after encoding: {len(feature_names)}")
     
-    # Create dataframe with transformed features
     X_transformed_df = pd.DataFrame(
         X_transformed,
         columns=feature_names,
         index=df.index
     )
     
-    # Add target variable
     X_transformed_df[target_col] = y.values
     
-    logger.info(f"✅ Final feature dataframe shape: {X_transformed_df.shape}")
+    logger.info(f"✅ Final dataframe shape: {X_transformed_df.shape}")
     
     return X_transformed_df, preprocessor, feature_names
 
 
 def save_preprocessor(preprocessor: ColumnTransformer, output_path: str) -> None:
-    """
-    Save fitted preprocessor to disk using joblib.
-    
-    Args:
-        preprocessor (ColumnTransformer): Fitted preprocessing pipeline
-        output_path (str): Path where preprocessor will be saved
-    """
+    """Save fitted preprocessor."""
     logger.info(f"Saving preprocessor to: {output_path}")
     
-    # Create output directory if it doesn't exist
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     
-    # Save preprocessor
     joblib.dump(preprocessor, output_path)
     
-    file_size = output_file.stat().st_size / 1024  # Size in KB
-    logger.info(f"✅ Preprocessor saved successfully ({file_size:.2f} KB)")
+    file_size = output_file.stat().st_size / 1024
+    logger.info(f"✅ Preprocessor saved ({file_size:.2f} KB)")
 
 
 def save_featured_data(df: pd.DataFrame, output_path: str) -> None:
-    """
-    Save transformed features to CSV file.
-    
-    Args:
-        df (pd.DataFrame): Transformed feature dataframe
-        output_path (str): Path where CSV will be saved
-    """
+    """Save transformed features."""
     logger.info(f"Saving featured data to: {output_path}")
     
-    # Create output directory if it doesn't exist
     output_file = Path(output_path)
     output_file.parent.mkdir(parents=True, exist_ok=True)
     
-    # Save to CSV
     df.to_csv(output_path, index=False)
     
-    logger.info(f"✅ Featured data saved successfully")
-    logger.info(f"Final dataset shape: {df.shape[0]} rows × {df.shape[1]} columns")
+    logger.info(f"✅ Featured data saved: {df.shape[0]} rows × {df.shape[1]} columns")
 
 
 def validate_outputs(featured_df: pd.DataFrame, 
                     preprocessor: ColumnTransformer,
                     target_col: str = 'price') -> bool:
-    """
-    Validate the feature engineering outputs.
-    
-    Args:
-        featured_df (pd.DataFrame): Transformed feature dataframe
-        preprocessor (ColumnTransformer): Fitted preprocessor
-        target_col (str): Target column name
-        
-    Returns:
-        bool: True if validation passes, False otherwise
-    """
-    logger.info("Validating feature engineering outputs...")
+    """Validate outputs."""
+    logger.info("Validating outputs...")
     
     validations = []
     
-    # Check target column exists
     if target_col not in featured_df.columns:
-        logger.error(f"Target column '{target_col}' not found in featured data")
+        logger.error(f"Target column missing")
         validations.append(False)
     else:
-        logger.info(f"✅ Target column '{target_col}' present")
+        logger.info(f"✅ Target column present")
         validations.append(True)
     
-    # Check for NaN values
-    nan_count = featured_df.isna().sum().sum()
-    if nan_count > 0:
-        logger.warning(f"⚠️  {nan_count} NaN values found in featured data")
+    if featured_df.isna().sum().sum() > 0:
+        logger.error(f"NaN values found")
         validations.append(False)
     else:
-        logger.info(f"✅ No NaN values in featured data")
+        logger.info(f"✅ No NaN values")
         validations.append(True)
     
-    # Check for infinite values
-    inf_count = np.isinf(featured_df.select_dtypes(include=[np.number])).sum().sum()
-    if inf_count > 0:
-        logger.warning(f"⚠️  {inf_count} infinite values found in featured data")
-        validations.append(False)
-    else:
-        logger.info(f"✅ No infinite values in featured data")
+    if hasattr(preprocessor, 'transformers_'):
+        logger.info(f"✅ Preprocessor fitted")
         validations.append(True)
-    
-    # Check preprocessor is fitted
-    try:
-        # Check if preprocessor has been fitted (has transformers_ attribute)
-        if hasattr(preprocessor, 'transformers_'):
-            logger.info(f"✅ Preprocessor is properly fitted")
-            validations.append(True)
-        else:
-            logger.error(f"Preprocessor is not fitted")
-            validations.append(False)
-    except Exception as e:
-        logger.error(f"Error validating preprocessor: {str(e)}")
+    else:
+        logger.error(f"Preprocessor not fitted")
         validations.append(False)
     
-    # Check feature dtypes are numeric
-    feature_cols = [col for col in featured_df.columns if col != target_col]
-    non_numeric = featured_df[feature_cols].select_dtypes(exclude=[np.number]).columns.tolist()
-    if non_numeric:
-        logger.error(f"Non-numeric feature columns found: {non_numeric}")
-        validations.append(False)
-    else:
-        logger.info(f"✅ All feature columns are numeric")
-        validations.append(True)
-    
-    all_passed = all(validations)
-    if all_passed:
-        logger.info("All validations passed!")
-    else:
-        logger.error("Some validations failed")
-    
-    return all_passed
+    return all(validations)
 
 
 def main(input_path: str, 
          output_data_path: str,
          output_preprocessor_path: str,
          target_col: str = 'price') -> None:
-    """
-    Main feature engineering pipeline.
-    
-    Args:
-        input_path (str): Path to processed CSV file
-        output_data_path (str): Path to save featured CSV file
-        output_preprocessor_path (str): Path to save preprocessor pickle file
-        target_col (str): Name of the target variable (default: 'price')
-    """
+    """Main feature engineering pipeline."""
     logger.info("="*80)
-    logger.info("STARTING FEATURE ENGINEERING PIPELINE")
+    logger.info("STARTING FEATURE ENGINEERING - CARDEKHO V5.0")
     logger.info("="*80)
     
     try:
-        # 1. Load processed data
         df = load_processed_data(input_path)
-        
-        # 2. Create new features
         df_featured = create_features(df)
         
-        # 3. Define feature columns
         categorical_features, numerical_features = define_feature_columns(
-            df_featured, 
-            target_col=target_col
+            df_featured, target_col=target_col
         )
         
-        # 4. Build preprocessor
         preprocessor = build_preprocessor(categorical_features, numerical_features)
         
-        # 5. Fit and transform
         featured_df, fitted_preprocessor, feature_names = fit_and_transform(
             df_featured,
             preprocessor,
@@ -381,84 +329,30 @@ def main(input_path: str,
             target_col=target_col
         )
         
-        # 6. Validate outputs
         if not validate_outputs(featured_df, fitted_preprocessor, target_col=target_col):
-            logger.error("Feature engineering validation failed. Please review the logs.")
+            logger.error("Validation failed")
             sys.exit(1)
         
-        # 7. Save preprocessor
         save_preprocessor(fitted_preprocessor, output_preprocessor_path)
-        
-        # 8. Save featured data
         save_featured_data(featured_df, output_data_path)
         
-        # 9. Summary statistics
         logger.info("="*80)
-        logger.info("FEATURE ENGINEERING SUMMARY")
-        logger.info("="*80)
-        logger.info(f"Input rows: {len(df)}")
-        logger.info(f"Output rows: {len(featured_df)}")
-        logger.info(f"Original features: {len(df.columns)}")
-        logger.info(f"Engineered features: {len(featured_df.columns) - 1}")
-        logger.info(f"Feature names sample: {list(feature_names[:5])}")
-        logger.info(f"Target variable: {target_col}")
-        logger.info(f"Target range: ${featured_df[target_col].min():.0f} - ${featured_df[target_col].max():.0f}")
-        
-        logger.info("="*80)
-        logger.info("FEATURE ENGINEERING PIPELINE COMPLETED SUCCESSFULLY")
+        logger.info("✅ FEATURE ENGINEERING COMPLETED")
         logger.info("="*80)
         
     except Exception as e:
-        logger.error(f"Pipeline failed with error: {str(e)}", exc_info=True)
+        logger.error(f"Pipeline failed: {str(e)}", exc_info=True)
         sys.exit(1)
 
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Feature engineering pipeline for car pricing model",
-        formatter_class=argparse.RawDescriptionHelpFormatter,
-        epilog="""
-Examples:
-  python src/features/build_features.py \\
-    --input data/processed/processed_cars.csv \\
-    --output-data data/processed/featured_cars.csv \\
-    --output-preprocessor models/preprocessor.pkl
-        """
-    )
+    parser = argparse.ArgumentParser(description="Feature engineering for Cardekho V3")
     
-    parser.add_argument(
-        '--input',
-        type=str,
-        required=True,
-        help='Path to processed CSV file (e.g., data/processed/processed_cars.csv)'
-    )
-    
-    parser.add_argument(
-        '--output-data',
-        type=str,
-        required=True,
-        help='Path to save featured CSV file (e.g., data/processed/featured_cars.csv)'
-    )
-    
-    parser.add_argument(
-        '--output-preprocessor',
-        type=str,
-        required=True,
-        help='Path to save preprocessor pickle file (e.g., models/preprocessor.pkl)'
-    )
-    
-    parser.add_argument(
-        '--target',
-        type=str,
-        default='price',
-        help='Name of the target variable (default: price)'
-    )
+    parser.add_argument('--input', type=str, required=True)
+    parser.add_argument('--output-data', type=str, required=True)
+    parser.add_argument('--output-preprocessor', type=str, required=True)
+    parser.add_argument('--target', type=str, default='price')
     
     args = parser.parse_args()
     
-    main(
-        args.input,
-        args.output_data,
-        args.output_preprocessor,
-        args.target
-    )
+    main(args.input, args.output_data, args.output_preprocessor, args.target)

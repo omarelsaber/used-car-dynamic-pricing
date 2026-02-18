@@ -1,4 +1,7 @@
-﻿# Core Data Science
+# Used Car Dynamic Pricing - Dependencies
+# Python 3.10+ required. Used by API (FastAPI), Frontend (Streamlit), and ML pipeline.
+
+# Core Data Science
 pandas>=1.5.0
 numpy>=1.23.0
 scikit-learn>=1.2.0
@@ -9,6 +12,9 @@ seaborn>=0.12.0
 
 # ML Experiment Tracking
 mlflow>=2.8.0
+
+# Advanced ML Models
+xgboost>=2.0.0
 
 # Data Versioning
 dvc>=3.30.0
@@ -23,6 +29,12 @@ python-dotenv>=1.0.0
 pyyaml>=6.0
 joblib>=1.3.0
 
+# API Framework
+fastapi>=0.104.0
+uvicorn[standard]>=0.24.0
+pydantic>=2.4.0
+python-multipart>=0.0.6
+
 # Code Quality & Testing
 pytest>=7.4.0
 pytest-cov>=4.1.0
@@ -31,3 +43,9 @@ flake8>=6.0.0
 isort>=5.12.0
 bandit>=1.7.0
 safety>=2.3.0
+
+# Frontend Framework (Streamlit)
+streamlit>=1.28.0
+streamlit-lottie>=0.0.5
+requests>=2.31.0
+plotly>=5.17.0

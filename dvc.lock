@@ -1,23 +1,22 @@
 schema: '2.0'
 stages:
   process_data:
-    cmd: python src/data/process_data.py --input 
-      data/raw/car_web_scraped_dataset.csv --output 
-      data/processed/processed_cars.csv
+    cmd: python src/data/process_data.py --input data/raw/cardekho_v3.csv 
+      --output data/processed/processed_cars.csv
     deps:
-    - path: data/raw/car_web_scraped_dataset.csv
+    - path: data/raw/cardekho_v3.csv
       hash: md5
-      md5: baad5f5313b07a70ac360426f78ae92e
-      size: 315881
+      md5: 08c5f2987e4e9366b11011e7f12aee92
+      size: 1041637
     - path: src/data/process_data.py
       hash: md5
-      md5: 3ac8ac32683212644e1c5b88177dcea6
-      size: 11670
+      md5: 2f29533d40ba3f9449cb88b591e67b7e
+      size: 14414
     outs:
     - path: data/processed/processed_cars.csv
       hash: md5
-      md5: 5e19e67a9f9046d935819fc10d5bb0cd
-      size: 227084
+      md5: 4716c9a815548aac2f0c893ad27b4c91
+      size: 688608
   build_features:
     cmd: python src/features/build_features.py --input 
       data/processed/processed_cars.csv --output-data 
@@ -26,48 +25,57 @@ stages:
     deps:
     - path: data/processed/processed_cars.csv
       hash: md5
-      md5: 5e19e67a9f9046d935819fc10d5bb0cd
-      size: 227084
+      md5: 4716c9a815548aac2f0c893ad27b4c91
+      size: 688608
     - path: src/features/build_features.py
       hash: md5
-      md5: c8dd9907ab0d21463ea0ae3d37ef99ad
-      size: 15862
+      md5: f60b4837643091df25e0b421752ae0ba
+      size: 12270
     outs:
     - path: data/processed/featured_cars.csv
       hash: md5
-      md5: 626c61df0dbab530f5fb48779d09466a
-      size: 3845513
+      md5: 506dc8d7d49e55869e0d6b6f51fb54bc
+      size: 2211630
     - path: models/preprocessor.pkl
       hash: md5
-      md5: aded576c613aac45b183a11dc8b850e8
-      size: 11384
+      md5: 39893e66740293c5e450f3cfbff1d57e
+      size: 4293
   train_model:
     cmd: python src/models/train_model.py --input 
       data/processed/featured_cars.csv --output-model models/model.pkl 
-      --output-metrics metrics/scores.json --n-estimators 200 --max-depth 15 
-      --test-size 0.2 --random-state 42 --target price
+      --output-metrics metrics/scores.json --n-estimators 1000 --learning-rate 
+      0.05 --max-depth 6 --reg-lambda 1.0 --reg-alpha 0.5 --subsample 0.9 
+      --colsample-bytree 0.9 --min-child-weight 1 --gamma 0.0 --test-size 0.2 
+      --random-state 42 --target price
     deps:
     - path: data/processed/featured_cars.csv
       hash: md5
-      md5: 626c61df0dbab530f5fb48779d09466a
-      size: 3845513
+      md5: 506dc8d7d49e55869e0d6b6f51fb54bc
+      size: 2211630
     - path: src/models/train_model.py
       hash: md5
-      md5: e89fb9b70cac16e4a2d96437ad162db1
-      size: 16548
+      md5: f5ceecf8f5c2a725cf5f48fcb16cf794
+      size: 23888
     params:
       params.yaml:
-        train.max_depth: 15
-        train.n_estimators: 200
+        train.colsample_bytree: 0.9
+        train.gamma: 0.0
+        train.learning_rate: 0.05
+        train.max_depth: 6
+        train.min_child_weight: 1
+        train.n_estimators: 1000
         train.random_state: 42
+        train.reg_alpha: 0.5
+        train.reg_lambda: 1.0
+        train.subsample: 0.9
         train.target_col: price
         train.test_size: 0.2
     outs:
     - path: metrics/scores.json
       hash: md5
-      md5: 862be549dab75f2da2782d55b897a5e9
-      size: 97
+      md5: 62511c2304747e5e5c5260f4fb98fce0
+      size: 98
     - path: models/model.pkl
       hash: md5
-      md5: cebc47c8462f83e9c2ffa5a65d3142a4
-      size: 6892625
+      md5: c31fd5c8c32cd29202ce19a15b6c7e9f
+      size: 3888914

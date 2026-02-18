@@ -1,0 +1,53 @@
+feature,importance
+num__year,0.18274243
+num__max_power,0.1522658
+num__car_age,0.070772484
+cat__transmission_Automatic,0.06735641
+num__engine,0.06732411
+cat__brand_Tata,0.063594766
+cat__brand_Toyota,0.059286106
+cat__brand_Chevrolet,0.039671205
+cat__fuel_Diesel,0.03420092
+cat__brand_Mercedes-Benz,0.017939236
+num__seats,0.017935142
+cat__brand_Mahindra,0.017454622
+cat__transmission_Manual,0.017354146
+cat__brand_Datsun,0.016359547
+cat__fuel_Petrol,0.015774736
+cat__brand_Honda,0.011794675
+cat__owner_First Owner,0.0106230825
+cat__brand_Fiat,0.0094249025
+cat__brand_Volkswagen,0.009301422
+cat__brand_Kia,0.008274241
+cat__brand_Maruti,0.008231647
+cat__brand_Nissan,0.0070254826
+num__mileage,0.006999796
+cat__brand_BMW,0.006384175
+cat__fuel_LPG,0.006280858
+cat__brand_Ford,0.006014969
+cat__brand_Ambassador,0.005391959
+cat__brand_Force,0.005365414
+cat__brand_Hyundai,0.0048812106
+cat__brand_Mitsubishi,0.0042257984
+cat__brand_Land,0.0041378047
+cat__brand_Jaguar,0.0040643774
+num__mileage_driven,0.0040315897
+cat__brand_Audi,0.003870381
+cat__brand_Renault,0.003317268
+cat__brand_Skoda,0.0032847426
+cat__brand_Volvo,0.0029621883
+cat__seller_type_Individual,0.0028622937
+cat__owner_Fourth & Above Owner,0.0028523654
+cat__seller_type_Dealer,0.0027730898
+cat__owner_Test Drive Car,0.0024996235
+cat__fuel_CNG,0.0023771215
+cat__owner_Second Owner,0.0022768422
+cat__owner_Third Owner,0.0021526758
+cat__brand_Jeep,0.001338596
+cat__brand_Daewoo,0.0010992783
+cat__seller_type_Trustmark Dealer,0.0009433238
+cat__brand_Ashok,0.0009419538
+cat__brand_MG,0.0008712335
+cat__brand_Isuzu,0.0007105088
+cat__brand_Opel,0.00020896012
+cat__brand_Lexus,0.00017249645

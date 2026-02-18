@@ -1,4 +1,4 @@
-.PHONY: help install install-dev lint format format-check test test-cov test-fast train train-force metrics metrics-diff dag status mlflow-ui clean clean-data clean-models check ci all
+.PHONY: help install install-dev lint format format-check test test-cov test-fast train train-force metrics metrics-diff dag status mlflow-ui api-dev api-test docker-build docker-run docker-stop docker-logs docker-test docker-clean compose-up compose-down compose-logs compose-dev compose-dev-down check ci all
 
 # Python interpreter
 PYTHON := python
@@ -36,6 +36,21 @@ help:
 	@echo "  make dag               Show DVC pipeline DAG"
 	@echo "  make status            Show DVC pipeline status"
 	@echo "  make mlflow-ui         Launch MLflow UI"
+	@echo ""
+	@echo "$(GREEN)API Development:$(NC)"
+	@echo "  make api-dev           Run FastAPI development server"
+	@echo "  make api-test          Test API with sample request"
+	@echo ""
+	@echo "$(GREEN)Docker:$(NC)"
+	@echo "  make docker-build      Build Docker image"
+	@echo "  make docker-run        Run Docker container"
+	@echo "  make docker-stop       Stop Docker container"
+	@echo "  make docker-logs       View Docker logs"
+	@echo "  make docker-test       Test API in Docker"
+	@echo "  make compose-up       Start services with docker-compose"
+	@echo "  make compose-down     Stop docker-compose services"
+	@echo "  make compose-dev       Start development environment (hot-reload)"
+	@echo "  make compose-dev-down Stop development environment"
 	@echo ""
 	@echo "$(GREEN)Cleanup:$(NC)"
 	@echo "  make clean             Remove cache and temporary files"
@@ -131,6 +146,86 @@ mlflow-ui:
 	mlflow ui
 	@echo "$(GREEN)✓ MLflow UI running at http://localhost:5000$(NC)"
 
+# API Development targets
+api-dev:
+	@echo "$(BLUE)Starting FastAPI development server...$(NC)"
+	@echo "$(GREEN)📊 API docs: http://localhost:8000/docs$(NC)"
+	@echo "$(GREEN)📋 Health: http://localhost:8000/health$(NC)"
+	cd src/app && $(PYTHON) -m uvicorn api:app --reload --host 0.0.0.0 --port 8000
+
+api-test:
+	@echo "$(BLUE)Testing API...$(NC)"
+	curl -X POST "http://localhost:8000/predict" \
+	  -H "Content-Type: application/json" \
+	  -d "{\"name\":\"Toyota Corolla\",\"year\":2020,\"miles\":\"45,000 miles\",\"color\":\"Black\",\"condition\":\"No accidents reported, 1 Owner\"}"
+
+# Docker targets
+docker-build:
+	@echo "$(BLUE)Building Docker image...$(NC)"
+	docker build -t used-car-price-api:latest .
+	@echo "$(GREEN)✓ Image built successfully$(NC)"
+
+docker-run:
+	@echo "$(BLUE)Starting Docker container...$(NC)"
+	docker run -d \
+	  --name car-price-api \
+	  -p 8000:8000 \
+	  --restart unless-stopped \
+	  -v $(PWD)/logs:/app/logs \
+	  used-car-price-api:latest
+	@echo "$(GREEN)✓ Container started$(NC)"
+	@echo "$(GREEN)📊 API: http://localhost:8000$(NC)"
+	@echo "$(GREEN)📚 Docs: http://localhost:8000/docs$(NC)"
+
+docker-stop:
+	@echo "$(BLUE)Stopping Docker container...$(NC)"
+	-docker stop car-price-api
+	-docker rm car-price-api
+	@echo "$(GREEN)✓ Container stopped$(NC)"
+
+docker-logs:
+	docker logs -f car-price-api
+
+docker-shell:
+	docker exec -it car-price-api bash
+
+docker-test:
+	@echo "$(BLUE)Testing API in Docker...$(NC)"
+	curl -X POST "http://localhost:8000/predict" \
+	  -H "Content-Type: application/json" \
+	  -d '{"name":"Toyota Corolla","year":2020,"miles":"45,000 miles","color":"Black","condition":"No accidents reported, 1 Owner"}'
+
+docker-clean:
+	@echo "$(BLUE)Cleaning Docker resources...$(NC)"
+	-docker-compose down -v
+	docker system prune -f
+	@echo "$(GREEN)✓ Cleaned$(NC)"
+
+# Docker Compose targets
+compose-up:
+	@echo "$(BLUE)Starting services...$(NC)"
+	docker-compose up -d --build
+	@echo "$(GREEN)✓ Services started$(NC)"
+	@echo "$(GREEN)📊 API: http://localhost:8000$(NC)"
+
+compose-down:
+	@echo "$(BLUE)Stopping services...$(NC)"
+	docker-compose down
+	@echo "$(GREEN)✓ Services stopped$(NC)"
+
+compose-logs:
+	docker-compose logs -f api
+
+compose-dev:
+	@echo "$(BLUE)Starting development environment...$(NC)"
+	docker-compose -f docker-compose.dev.yaml up -d --build
+	@echo "$(GREEN)✓ Development environment started$(NC)"
+	@echo "$(GREEN)📊 API: http://localhost:8000 (hot-reload enabled)$(NC)"
+
+compose-dev-down:
+	docker-compose -f docker-compose.dev.yaml down
+	@echo "$(GREEN)✓ Development environment stopped$(NC)"
+
 # Cleanup targets
 clean:
 	@echo "$(BLUE)Cleaning cache and temporary files...$(NC)"
@@ -172,5 +267,54 @@ all: clean install test train
 	@echo "  - Launch MLflow: make mlflow-ui"
 	@echo "  - View coverage: open htmlcov/index.html"
 	@echo ""
+
+#—————————————————————————————————————————————————————————————————————————————
+# FRONTEND COMMANDS
+#—————————————————————————————————————————————————————————————————————————————
+
+frontend-dev:  ## Run Streamlit frontend locally
+	@echo "🎨 Starting Streamlit frontend..."
+	@echo "🌐 Frontend: http://localhost:8501"
+	cd src/frontend && API_URL=http://localhost:8000 streamlit run app.py
+
+#—————————————————————————————————————————————————————————————————————————————
+# FULL STACK COMMANDS
+#—————————————————————————————————————————————————————————————————————————————
+
+stack-up:  ## Start full stack (API + Frontend)
+	@echo "🚀 Starting full stack..."
+	docker-compose up -d --build
+	@echo "✅ Full stack started!"
+	@echo ""
+	@echo "📊 Services:"
+	@echo "   - API:      http://localhost:8000"
+	@echo "   - API Docs: http://localhost:8000/docs"
+	@echo "   - Frontend: http://localhost:8501"
+	@echo ""
+	@echo "View logs: make stack-logs"
+
+stack-down:  ## Stop full stack
+	@echo "🛑 Stopping full stack..."
+	docker-compose down
+	@echo "✅ Full stack stopped"
+
+stack-logs:  ## View full stack logs
+	docker-compose logs -f
+
+stack-restart:  ## Restart full stack
+	@echo "🔄 Restarting full stack..."
+	docker-compose restart
+	@echo "✅ Full stack restarted"
+
+stack-rebuild:  ## Rebuild and restart full stack
+	@echo "🔨 Rebuilding full stack..."
+	docker-compose down
+	docker-compose up -d --build
+	@echo "✅ Full stack rebuilt and started"
+
+stack-status:  ## Show status of all services
+	@echo "📊 Service Status:"
+	docker-compose ps
+
 
 .DEFAULT_GOAL := help
