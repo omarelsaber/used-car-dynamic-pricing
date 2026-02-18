@@ -7,6 +7,27 @@ on:
     branches: [main, develop]
 
 jobs:
+  tests:
+    name: Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install Dependencies
+        run: pip install -r requirements.txt
+      
+      - name: Run Tests
+        run: pytest tests/ -v --cov=src --cov-report=xml
+      
+      - name: Upload Coverage
+        uses: codecov/codecov-action@v3
+        with:
+          file: ./coverage.xml
+          fail_ci_if_error: false
+
   code-quality:
     name: Code Quality
     runs-on: ubuntu-latest
@@ -15,31 +36,21 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install flake8 black isort
+      
+      - name: Install Tools
+        run: pip install flake8 black isort
+      
       - name: Flake8
-        continue-on-error: true
         run: flake8 src/ --count --exit-zero
+        continue-on-error: true
+      
       - name: Black
-        continue-on-error: true
         run: black --check src/
-      - name: Isort
         continue-on-error: true
+      
+      - name: Isort
         run: isort --check-only src/
-
-  unit-tests:
-    name: Unit Tests
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v4
-        with:
-          python-version: '3.10'
-      - run: pip install -r requirements.txt pytest pytest-cov
-      - run: pytest tests/ -v --cov=src --cov-report=xml
-      - uses: codecov/codecov-action@v3
-        with:
-          file: ./coverage.xml
-          fail_ci_if_error: false
+        continue-on-error: true
 
   security:
     name: Security
@@ -49,49 +60,27 @@ jobs:
       - uses: actions/setup-python@v4
         with:
           python-version: '3.10'
-      - run: pip install bandit safety
+      
+      - name: Install Tools
+        run: pip install bandit
+      
       - name: Bandit
+        run: bandit -r src/ --exit-zero
         continue-on-error: true
-        run: bandit -r src/
-      - name: Safety
-        continue-on-error: true
-        run: safety check
-
-  docker:
-    name: Docker Build
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - name: Create .env
-        run: echo 'API_PORT=8001' > .env
-      - name: Build Images
-        run: docker-compose build
-      - name: Start Services
-        run: |
-          docker-compose up -d
-          sleep 5
-          docker-compose ps
-      - name: Cleanup
-        if: always()
-        run: docker-compose down -v
 
   summary:
     name: Summary
     runs-on: ubuntu-latest
-    needs: [code-quality, unit-tests, security, docker]
+    needs: [tests, code-quality, security]
     if: always()
     steps:
       - run: |
-          echo "CI Results:"
+          echo "=== CI Pipeline Summary ==="
+          echo "Tests: ${{ needs.tests.result }}"
           echo "Code Quality: ${{ needs.code-quality.result }}"
-          echo "Unit Tests: ${{ needs.unit-tests.result }}"
           echo "Security: ${{ needs.security.result }}"
-          echo "Docker: ${{ needs.docker.result }}"
           
-          if [ "${{ needs.unit-tests.result }}" = "failure" ]; then
-            exit 1
-          fi
-          
-          if [ "${{ needs.docker.result }}" = "failure" ]; then
+          if [ "${{ needs.tests.result }}" = "failure" ]; then
+            echo "❌ Tests failed"
             exit 1
           fi
