@@ -12,12 +12,16 @@ Version: V3.0 (Cardekho Dataset)
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 import pandas as pd
 import numpy as np
 import re
 
+
+# Ensure logs directory exists for file handler
+os.makedirs('logs', exist_ok=True)
 
 # Configure logging
 logging.basicConfig(

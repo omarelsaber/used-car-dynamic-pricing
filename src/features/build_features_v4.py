@@ -18,6 +18,7 @@ Date: Feb 2026
 
 import argparse
 import logging
+import os
 import sys
 from pathlib import Path
 from datetime import datetime
@@ -29,6 +30,9 @@ from sklearn.compose import ColumnTransformer
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
 from sklearn.pipeline import Pipeline
 
+
+# Ensure logs directory exists for file handler
+os.makedirs('logs', exist_ok=True)
 
 # Configure logging
 logging.basicConfig(
